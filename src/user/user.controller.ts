@@ -67,6 +67,11 @@ async registerUser(@Body() createUserDto: CreateUserDto) {
     return { message: 'User deleted successfully' };
   }
 
+  @Post('refreshToken')
+  async generateRefreshToken(@Body() payload: any) {
+    const refreshToken = this.jwtService.generateRefreshToken(payload);
+    return { refreshToken };
+  }
 
   @Post('favorites')
   async addToUserFavorites(@Body('userId') userId: string, @Body() articleData: any, @Res() res) {
