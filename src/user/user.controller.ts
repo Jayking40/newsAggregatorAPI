@@ -12,31 +12,39 @@ export class UserController {
     private readonly jwtService: JwtService,
 ) {}
 
-  @Post('register')
-  async registerUser(@Body() createUserDto: CreateUserDto) {
-    const { username, email, password } = createUserDto;
+@Post('register')
+async registerUser(@Body() createUserDto: CreateUserDto) {
+  const { username, email, password } = createUserDto;
 
-    // Check if email or username already exists
-    const existingUserByEmail = await this.userService.findUserByEmail(email);
-    const existingUserByUsername =
-      await this.userService.findUserByUsername(username);
+  // Check if email or username already exists
+  const existingUserByEmail = await this.userService.findUserByEmail(email);
+  const existingUserByUsername = await this.userService.findUserByUsername(username);
 
-    if (existingUserByEmail) {
-      throw new BadRequestException('Email is already registered');
-    }
-
-    if (existingUserByUsername) {
-      throw new BadRequestException('Username is already taken');
-    }
-
-    // Create user
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = await this.userService.createUser(username, email, hashedPassword);
-
-    const sanitizedUser = this.userService.sanitizeUser(newUser);
-
-    return sanitizedUser;
+  if (existingUserByEmail) {
+    throw new BadRequestException('Email is already registered');
   }
+
+  if (existingUserByUsername) {
+    throw new BadRequestException('Username is already taken');
+  }
+
+  // Create user
+  const hashedPassword = await bcrypt.hash(password, 10);
+  const newUser = await this.userService.createUser(username, email, hashedPassword);
+
+  // Generate access token
+  const accessToken = await this.jwtService.generateAccessToken(newUser);
+
+  // Sanitize user object
+  const sanitizedUser = this.userService.sanitizeUser(newUser);
+
+  // Return user ID, access token, and sanitized user object
+  return {
+    userId: newUser.id,
+    accessToken,
+    user: sanitizedUser,
+  };
+}
 
   @Post('login')
   async loginUser(@Body() { email, password }) {
@@ -50,17 +58,17 @@ export class UserController {
     const accessToken = this.jwtService.generateAccessToken({ userId: user.id });
     const refreshToken = this.jwtService.generateRefreshToken({ userId: user.id });
 
-    return { accessToken, refreshToken, email: user.email, username: user.username };
+    return { accessToken, refreshToken, email: user.email, username: user.username, userId: user.id };
   }
 
   @Delete('deleteUser/:id')
   async deleteUser(@Param('id') userId: string) {
     await this.userService.deleteUser(userId);
-    return { msessage: 'User deleted successfully' };
+    return { message: 'User deleted successfully' };
   }
 
 
-  @Post('favorite')
+  @Post('favorites')
   async addToUserFavorites(@Body('userId') userId: string, @Body() articleData: any, @Res() res) {
     try {
       const article = { ...articleData };
