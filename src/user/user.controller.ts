@@ -1,9 +1,10 @@
 /* eslint-disable prettier/prettier */
-import { BadRequestException, Body, Controller, Delete, Get, HttpStatus, NotFoundException, Param, Post, Res } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, HttpStatus, NotFoundException, Param, Post, Req, Res, UseGuards } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/user.dto';
 import { JwtService } from 'src/jwt/jwt.service';
 import * as bcrypt from 'bcryptjs';
+import { AuthGuard } from 'src/auth.guard';
 
 @Controller('user')
 export class UserController {
@@ -73,11 +74,12 @@ async registerUser(@Body() createUserDto: CreateUserDto) {
     return { refreshToken };
   }
 
+  @UseGuards(AuthGuard)
   @Post('favorites')
-  async addToUserFavorites(@Body('userId') userId: string, @Body() articleData: any, @Res() res) {
+  async addToUserFavorites(@Req() req: any, @Body() articleData: any, @Res() res) {
     try {
       const article = { ...articleData };
-      const message = await this.userService.addToFavorites(userId, article);
+      const message = await this.userService.addToFavorites(req.user.id, article);
       res.status(HttpStatus.OK).json(message);
     } catch (error) {
       if (error instanceof NotFoundException) {
@@ -88,10 +90,11 @@ async registerUser(@Body() createUserDto: CreateUserDto) {
     }
   }
 
-  @Get('favorites/:userId')
-  async getUserFavorites(@Param('userId') userId: string, @Res() res) {
+  @UseGuards(AuthGuard)
+  @Get('favorites')
+  async getUserFavorites(@Res() res: any, @Req() req: any) {
     try {
-      const favorites = await this.userService.getFavorites(userId);
+      const favorites = await this.userService.getFavorites(req.user.id);
       res.status(HttpStatus.OK).json(favorites);
     } catch (error) {
       if (error instanceof NotFoundException) {
