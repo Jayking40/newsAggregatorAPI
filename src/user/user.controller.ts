@@ -75,7 +75,7 @@ async registerUser(@Body() createUserDto: CreateUserDto) {
   }
 
   @UseGuards(AuthGuard)
-  @Post('favorites')
+  @Post('favorite')
   async addToUserFavorites(@Req() req: any, @Body() articleData: any, @Res() res) {
     try {
       const article = { ...articleData };
@@ -91,7 +91,7 @@ async registerUser(@Body() createUserDto: CreateUserDto) {
   }
 
   @UseGuards(AuthGuard)
-  @Get('favorites')
+  @Get('allFavorites')
   async getUserFavorites(@Res() res: any, @Req() req: any) {
     try {
       const favorites = await this.userService.getFavorites(req.user.id);
